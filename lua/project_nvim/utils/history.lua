@@ -27,16 +27,16 @@ local function dir_exists(dir)
 end
 
 local function normalise_path(path_to_normalise)
-    local normalised_path = path_to_normalise:gsub("\\", "/"):gsub("//", "/")
+  local normalised_path = path_to_normalise:gsub("\\", "/"):gsub("//", "/")
 
-    if is_windows then
-       normalised_path = normalised_path:sub(1,1):lower()..normalised_path:sub(2)
-    end
+  if is_windows then
+    normalised_path = normalised_path:sub(1, 1):lower() .. normalised_path:sub(2)
+  end
 
-    return normalised_path
+  return normalised_path
 end
 
-local function delete_duplicates(tbl)
+function M.delete_duplicates(tbl)
   local cache_dict = {}
   for _, v in ipairs(tbl) do
     local normalised_path = normalise_path(v)
@@ -67,7 +67,7 @@ function M.delete_project(project)
   end
 end
 
-local function deserialize_history(history_data)
+function M.deserialize_history(history_data)
   -- split data to table
   local projects = {}
   for s in history_data:gmatch("[^\r\n]+") do
@@ -76,7 +76,7 @@ local function deserialize_history(history_data)
     end
   end
 
-  projects = delete_duplicates(projects)
+  projects = M.delete_duplicates(projects)
 
   M.recent_projects = projects
 end
@@ -108,8 +108,9 @@ function M.read_projects_from_history()
       uv.fs_fstat(fd, function(_, stat)
         if stat ~= nil then
           uv.fs_read(fd, stat.size, -1, function(_, data)
-            uv.fs_close(fd, function(_, _) end)
-            deserialize_history(data)
+            uv.fs_close(fd, function(_, _)
+            end)
+            M.deserialize_history(data)
           end)
         end
       end)
@@ -117,16 +118,17 @@ function M.read_projects_from_history()
   end)
 end
 
-local function sanitize_projects()
+function M.sanitize_projects(...)
+  -- each arg is a table of string, merge those args into one table.
   local tbl = {}
-  if M.recent_projects ~= nil then
-    vim.list_extend(tbl, M.recent_projects)
-    vim.list_extend(tbl, M.session_projects)
-  else
-    tbl = M.session_projects
+  for _, t in ipairs({ ... }) do
+    if type(t) ~= "table" then
+      error("arg must be a table of string")
+    end
+    vim.list_extend(tbl, t)
   end
 
-  tbl = delete_duplicates(tbl)
+  tbl = M.delete_duplicates(tbl)
 
   local real_tbl = {}
   for _, dir in ipairs(tbl) do
@@ -139,7 +141,11 @@ local function sanitize_projects()
 end
 
 function M.get_recent_projects()
-  return sanitize_projects()
+  return M.sanitize_projects(M.recent_projects, M.session_projects)
+end
+
+function M.get_session_projects()
+  return M.sanitize_projects(M.session_projects)
 end
 
 function M.write_projects_to_history()
@@ -152,7 +158,7 @@ function M.write_projects_to_history()
   local file = open_history(mode)
 
   if file ~= nil then
-    local res = sanitize_projects()
+    local res = M.sanitize_projects(M.recent_projects, M.session_projects)
 
     -- Trim table to last 100 entries
     local len_res = #res
