@@ -186,6 +186,14 @@ function M.set_pwd(dir, method)
         return
       end
 
+      vim.api.nvim_exec_autocmds('User', {
+        pattern = 'ProjectNvimSetPwd',
+        modeline = false,
+        data = {
+          dir = dir,
+          method = method,
+        }
+      })
       if config.options.silent_chdir == false then
         vim.notify("Set CWD to " .. dir .. " using " .. method)
       end
@@ -270,7 +278,7 @@ function M.init()
   ]])
 
   autocmds[#autocmds + 1] =
-    'autocmd VimLeavePre * lua require("project_nvim.utils.history").write_projects_to_history()'
+  'autocmd VimLeavePre * lua require("project_nvim.utils.history").write_projects_to_history()'
 
   vim.cmd([[augroup project_nvim
             au!
