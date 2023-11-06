@@ -22,8 +22,8 @@ local config = require("project_nvim.config")
 -- Actions
 ----------
 
-local function create_finder()
-  local results = history.get_recent_projects()
+local function create_finder(projects)
+  local results = projects or history.get_recent_projects()
 
   -- Reverse results
   for i = 1, math.floor(#results / 2) do
