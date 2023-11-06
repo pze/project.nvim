@@ -240,7 +240,7 @@ function M.is_file()
 end
 
 function M.on_buf_enter()
-  if vim.v.vim_did_enter == 0 then
+  if vim.v.vim_did_enter == 0 or vim.g.project_nvim_disable or vim.b[0].project_nvim_disable then
     return
   end
 
