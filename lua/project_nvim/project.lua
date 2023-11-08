@@ -171,11 +171,12 @@ end
 
 function M.set_pwd(dir, method)
   if dir ~= nil then
+    local last_project = M.last_project
     M.last_project = dir
     table.insert(history.session_projects, dir)
 
+    local scope_chdir = config.options.scope_chdir
     if vim.fn.getcwd() ~= dir then
-      local scope_chdir = config.options.scope_chdir
       if scope_chdir == 'global' then
         vim.api.nvim_set_current_dir(dir)
       elseif scope_chdir == 'tab' then
@@ -186,18 +187,21 @@ function M.set_pwd(dir, method)
         return
       end
 
-      vim.api.nvim_exec_autocmds('User', {
-        pattern = 'ProjectNvimSetPwd',
-        modeline = false,
-        data = {
-          dir = dir,
-          method = method,
-        }
-      })
       if config.options.silent_chdir == false then
         vim.notify("Set CWD to " .. dir .. " using " .. method)
       end
+    elseif last_project ~= nil then
+      return true
     end
+    vim.api.nvim_exec_autocmds('User', {
+      pattern = 'ProjectNvimSetPwd',
+      modeline = false,
+      data = {
+        dir = dir,
+        method = method,
+        scope = scope_chdir,
+      }
+    })
     return true
   end
 
