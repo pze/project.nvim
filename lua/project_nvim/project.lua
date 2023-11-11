@@ -9,20 +9,23 @@ local M = {}
 M.attached_lsp = false
 M.last_project = nil
 
-function M.find_lsp_root()
+---@param client? any
+function M.find_lsp_root(client)
   -- Get lsp client for current buffer
   -- Returns nil or string
-  local buf_ft = vim.api.nvim_buf_get_option(0, "filetype")
-  local clients = vim.lsp.buf_get_clients()
+  local buf_ft = vim.api.nvim_get_option_value('filetype', {
+    buf = 0
+  })
+  local clients = client and { client } or vim.lsp.buf_get_clients()
   if next(clients) == nil then
     return nil
   end
 
-  for _, client in pairs(clients) do
-    local filetypes = client.config.filetypes
+  for _, ct in pairs(clients) do
+    local filetypes = ct.config.filetypes
     if filetypes and vim.tbl_contains(filetypes, buf_ft) then
-      if not vim.tbl_contains(config.options.ignore_lsp, client.name) then
-        return client.config.root_dir, client.name
+      if not vim.tbl_contains(config.options.ignore_lsp, ct.name) then
+        return ct.config.root_dir, ct.name
       end
     end
   end
@@ -144,7 +147,11 @@ end
 
 ---@diagnostic disable-next-line: unused-local
 local on_attach_lsp = function(client, bufnr)
-  M.on_buf_enter() -- Recalculate root dir after lsp attaches
+  M.on_buf_enter({
+    trigger = 'lsp',
+    client = client,
+    buf = bufnr,
+  }) -- Recalculate root dir after lsp attaches
 end
 
 function M.attach_to_lsp()
@@ -171,7 +178,6 @@ end
 
 function M.set_pwd(dir, method)
   if dir ~= nil then
-    local last_project = M.last_project
     M.last_project = dir
     table.insert(history.session_projects, dir)
 
@@ -190,8 +196,6 @@ function M.set_pwd(dir, method)
       if config.options.silent_chdir == false then
         vim.notify("Set CWD to " .. dir .. " using " .. method)
       end
-    elseif last_project ~= nil then
-      return true
     end
     vim.api.nvim_exec_autocmds('User', {
       pattern = 'ProjectNvimSetPwd',
@@ -208,17 +212,36 @@ function M.set_pwd(dir, method)
   return false
 end
 
-function M.get_project_root()
+local function make_lsp_method_name(name)
+  return '"' .. name .. '"' .. " lsp"
+end
+
+---@param ctx? {trigger:'lsp'|'manual'|'auto', client:any, buf:number}
+function M.get_project_root(ctx)
+  ctx = ctx or {}
+  if ctx.trigger ~= 'lsp' and vim.b[0].project_nvim_cwd ~= nil then
+    return vim.b[ctx.buf or 0].project_nvim_cwd, vim.b[ctx.buf or 0].project_nvim_method
+  elseif ctx.trigger == 'lsp' and ctx.client and make_lsp_method_name(ctx.client.name) == vim.b[ctx.buf or 0].project_nvim_method then
+    return vim.b[ctx.buf or 0].project_nvim_cwd, vim.b[ctx.buf or 0].project_nvim_method
+  end
+
+  local detection_methods = ctx.trigger == 'lsp' and { 'lsp' } or config.options.detection_methods
+  local buf = ctx.buf or vim.api.nvim_get_current_buf()
   -- returns project root, as well as method
-  for _, detection_method in ipairs(config.options.detection_methods) do
+  for _, detection_method in ipairs(detection_methods) do
     if detection_method == "lsp" then
-      local root, lsp_name = M.find_lsp_root()
+      local root, lsp_name = M.find_lsp_root(ctx.client)
       if root ~= nil then
-        return root, '"' .. lsp_name .. '"' .. " lsp"
+        local method_name = make_lsp_method_name(lsp_name)
+        vim.b[buf].project_nvim_cwd = root
+        vim.b[buf].project_nvim_method = method_name
+        return root, method_name
       end
     elseif detection_method == "pattern" then
       local root, method = M.find_pattern_root()
       if root ~= nil then
+        vim.b[buf].project_nvim_cwd = root
+        vim.b[buf].project_nvim_method = method
         return root, method
       end
     end
@@ -226,7 +249,9 @@ function M.get_project_root()
 end
 
 function M.is_file()
-  local buf_type = vim.api.nvim_buf_get_option(0, "buftype")
+  local buf_type = vim.api.nvim_get_option_value('buftype', {
+    buf = 0
+  })
 
   local whitelisted_buf_type = { "", "acwrite" }
   local is_in_whitelist = false
@@ -243,8 +268,13 @@ function M.is_file()
   return true
 end
 
-function M.on_buf_enter()
-  if vim.v.vim_did_enter == 0 or vim.g.project_nvim_disable or vim.b[0].project_nvim_disable then
+---@param ctx? {trigger:string, client?:any, buf:number}
+function M.on_buf_enter(ctx)
+  ctx = ctx or {}
+  if vim.v.vim_did_enter == 0 or vim.g.project_nvim_disable then
+    return
+  end
+  if vim.b[ctx.buf or 0].project_nvim_disable then
     return
   end
 
@@ -257,7 +287,7 @@ function M.on_buf_enter()
     return
   end
 
-  local root, method = M.get_project_root()
+  local root, method = M.get_project_root(ctx)
   M.set_pwd(root, method)
 end
 
@@ -277,7 +307,7 @@ function M.init()
   end
 
   vim.cmd([[
-    command! ProjectRoot lua require("project_nvim.project").on_buf_enter()
+    command! ProjectRoot lua require("project_nvim.project").on_buf_enter(true)
     command! AddProject lua require("project_nvim.project").add_project_manually()
   ]])
 
