@@ -16,6 +16,8 @@ function M.find_lsp_root(client)
   local buf_ft = vim.api.nvim_get_option_value('filetype', {
     buf = 0
   })
+  if not buf_ft or buf_ft == '' then return end
+
   local clients = client and { client } or vim.lsp.buf_get_clients()
   if next(clients) == nil then
     return nil
@@ -255,6 +257,8 @@ function M.is_file()
   local buf_type = vim.api.nvim_get_option_value('buftype', {
     buf = 0
   })
+  local buf_name = vim.api.nvim_buf_get_name(0)
+  if not buf_name or buf_name == '' then return end
 
   local whitelisted_buf_type = { "", "acwrite" }
   local is_in_whitelist = false
