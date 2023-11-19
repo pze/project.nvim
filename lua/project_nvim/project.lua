@@ -25,7 +25,10 @@ function M.find_lsp_root(client)
     local filetypes = ct.config.filetypes
     if filetypes and vim.tbl_contains(filetypes, buf_ft) then
       if not vim.tbl_contains(config.options.ignore_lsp, ct.name) then
-        return ct.config.root_dir, ct.name
+        -- ignore single file mode.
+        if ct.config.single_file_support ~= true then
+          return ct.config.root_dir, ct.name
+        end
       end
     end
   end
