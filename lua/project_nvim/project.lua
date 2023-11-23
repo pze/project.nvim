@@ -23,6 +23,8 @@ function M.find_lsp_root(client)
     return nil
   end
 
+  -- NOTE: eslint lsp may return sibling project dir as root dir because current
+  -- project doesn't have node_modules yet.
   for _, ct in pairs(clients) do
     local filetypes = ct.config.filetypes
     if filetypes and vim.tbl_contains(filetypes, buf_ft) then
