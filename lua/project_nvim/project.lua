@@ -314,7 +314,7 @@ function M.init()
   end
 
   vim.cmd([[
-    command! ProjectRoot lua require("project_nvim.project").on_buf_enter(true)
+    command! ProjectRoot lua require("project_nvim.project").on_buf_enter()
     command! AddProject lua require("project_nvim.project").add_project_manually()
   ]])
 
