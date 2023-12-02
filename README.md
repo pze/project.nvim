@@ -12,67 +12,20 @@ superior project management.
 ## ✨ Features
 
 - Automagically cd to project directory using nvim lsp
-  - Dependency free, does not rely on lspconfig
+- Dependency free, does not rely on lspconfig
 - If no lsp then uses pattern matching to cd to root directory
-- ~~Nvim-tree.lua support/integration~~
-  - Please add the following to your config instead:
-    ```vim
-    " Vim Script
-    lua << EOF
-    require("nvim-tree").setup({
-      sync_root_with_cwd = true,
-      respect_buf_cwd = true,
-      update_focused_file = {
-        enable = true,
-        update_root = true
-      },
-    })
-    EOF
-    ```
-    ```lua
-    -- lua
-    require("nvim-tree").setup({
-      sync_root_with_cwd = true,
-      respect_buf_cwd = true,
-      update_focused_file = {
-        enable = true,
-        update_root = true
-      },
-    })
-    ```
 
 ## 📦 Installation
 
 Install the plugin with your preferred package manager:
 
-### [vim-plug](https://github.com/junegunn/vim-plug)
-
-```vim
-" Vim Script
-Plug 'ahmedkhalf/project.nvim'
-
-lua << EOF
-  require("project_nvim").setup {
-    -- your configuration comes here
-    -- or leave it empty to use the default settings
-    -- refer to the configuration section below
-  }
-EOF
-```
-
-### [packer](https://github.com/wbthomason/packer.nvim)
+### Lazy
 
 ```lua
--- Lua
-use {
-  "ahmedkhalf/project.nvim",
-  config = function()
-    require("project_nvim").setup {
-      -- your configuration comes here
-      -- or leave it empty to use the default settings
-      -- refer to the configuration section below
-    }
-  end
+{
+  'pze/project.nvim',
+  event = 'VeryLazy',
+  opts = {}
 }
 ```
 
@@ -163,44 +116,20 @@ patterns = { "!.git/worktrees", "!=extras", "!^fixtures", "!build/env.sh" }
 
 List your exclusions before the patterns you do want.
 
-### Telescope Integration
-
-To enable telescope integration:
-
-```lua
-require('telescope').load_extension('projects')
-```
-
-#### Telescope Projects Picker
-
-To use the projects picker
-
-```lua
-require'telescope'.extensions.projects.projects{}
-```
-
-#### Telescope mappings
-
-**project.nvim** comes with the following mappings:
-
-| Normal mode | Insert mode | Action                   |
-| ----------- | ----------- | ------------------------ |
-| f           | \<c-f\>     | find_project_files       |
-| b           | \<c-b\>     | browse_project_files     |
-| d           | \<c-d\>     | delete_project           |
-| s           | \<c-s\>     | search_in_project_files  |
-| r           | \<c-r\>     | recent_project_files     |
-| w           | \<c-w\>     | change_working_directory |
-
 ## API
 
-Get a list of recent projects:
+You can use `User ProjectNvimSetPwd` autocmd to listen cwd changes.
 
 ```lua
-local project_nvim = require("project_nvim")
-local recent_projects = project_nvim.get_recent_projects()
-
-print(vim.inspect(recent_projects))
+vim.api.nvim_create_autocmd('User', {
+  pattern = 'ProjectNvimSetPwd',
+  callback = function(ctx)
+    local data = ctx.data
+    local dir = data.dir
+    local method = data.method
+    local scope = data.scope_chdir
+  end
+})
 ```
 
 ## 🤝 Contributing
