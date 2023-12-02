@@ -1,5 +1,4 @@
 local config = require("project_nvim.config")
-local history = require("project_nvim.utils.history")
 local glob = require("project_nvim.utils.globtopattern")
 local path = require("project_nvim.utils.path")
 local uv = vim.loop
@@ -7,7 +6,6 @@ local M = {}
 
 -- Internal states
 M.attached_lsp = false
-M.last_project = nil
 
 ---@param client? any
 function M.find_lsp_root(client)
@@ -185,9 +183,6 @@ end
 
 function M.set_pwd(dir, method)
   if dir ~= nil then
-    M.last_project = dir
-    table.insert(history.session_projects, dir)
-
     local scope_chdir = config.options.scope_chdir
     if vim.fn.getcwd() ~= dir then
       if scope_chdir == 'global' then
@@ -320,9 +315,6 @@ function M.init()
     command! AddProject lua require("project_nvim.project").add_project_manually()
   ]])
 
-  autocmds[#autocmds + 1] =
-  'autocmd VimLeavePre * lua require("project_nvim.utils.history").write_projects_to_history()'
-
   vim.cmd([[augroup project_nvim
             au!
   ]])
@@ -330,8 +322,6 @@ function M.init()
     vim.cmd(value)
   end
   vim.cmd("augroup END")
-
-  history.read_projects_from_history()
 end
 
 return M
