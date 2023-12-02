@@ -14,10 +14,6 @@ superior project management.
 - Automagically cd to project directory using nvim lsp
   - Dependency free, does not rely on lspconfig
 - If no lsp then uses pattern matching to cd to root directory
-- Telescope integration `:Telescope projects`
-  - Access your recently opened projects from telescope!
-  - Asynchronous file io so it will not slow down vim when reading the history
-    file on startup.
 - ~~Nvim-tree.lua support/integration~~
   - Please add the following to your config instead:
     ```vim
@@ -120,10 +116,6 @@ use {
   -- * tab
   -- * win
   scope_chdir = 'global',
-
-  -- Path where project.nvim will store the project history for use in
-  -- telescope
-  datapath = vim.fn.stdpath("data"),
 }
 ```
 
@@ -174,12 +166,15 @@ List your exclusions before the patterns you do want.
 ### Telescope Integration
 
 To enable telescope integration:
+
 ```lua
 require('telescope').load_extension('projects')
 ```
 
 #### Telescope Projects Picker
+
 To use the projects picker
+
 ```lua
 require'telescope'.extensions.projects.projects{}
 ```
@@ -188,14 +183,14 @@ require'telescope'.extensions.projects.projects{}
 
 **project.nvim** comes with the following mappings:
 
-| Normal mode | Insert mode | Action                     |
-| ----------- | ----------- | -------------------------- |
-| f           | \<c-f\>     | find\_project\_files       |
-| b           | \<c-b\>     | browse\_project\_files     |
-| d           | \<c-d\>     | delete\_project            |
-| s           | \<c-s\>     | search\_in\_project\_files |
-| r           | \<c-r\>     | recent\_project\_files     |
-| w           | \<c-w\>     | change\_working\_directory |
+| Normal mode | Insert mode | Action                   |
+| ----------- | ----------- | ------------------------ |
+| f           | \<c-f\>     | find_project_files       |
+| b           | \<c-b\>     | browse_project_files     |
+| d           | \<c-d\>     | delete_project           |
+| s           | \<c-s\>     | search_in_project_files  |
+| r           | \<c-r\>     | recent_project_files     |
+| w           | \<c-w\>     | change_working_directory |
 
 ## API
 
