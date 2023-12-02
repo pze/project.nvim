@@ -1,9 +1,6 @@
 # 🗃️ project.nvim
 
-**project.nvim** is an all in one neovim plugin written in lua that provides
-superior project management.
-
-![Telescope Integration](https://user-images.githubusercontent.com/36672196/129409509-62340f10-4dd0-4c1a-9252-8bfedf2a9945.png)
+**project.nvim** is an neovim plugin written in lua that provides project discovery management.
 
 ## ⚡ Requirements
 
