@@ -23,6 +23,11 @@ M.defaults = {
   -- Don't calculate root dir on specific directories
   -- Ex: { "~/.cargo/*", ... }
   exclude_dirs = {},
+  -- Callback to check if specific buf should be excluded
+  -- @type function
+  ignore_buffer_fn = nil,
+  -- excluded filetypes
+  exclude_ft = { "gitcommit", "git", "fugitive" },
 
   -- Show hidden files in telescope
   show_hidden = false,
@@ -35,7 +40,7 @@ M.defaults = {
   -- * global (default)
   -- * tab
   -- * win
-  scope_chdir = 'global',
+  scope_chdir = "global",
 }
 
 ---@type ProjectOptions

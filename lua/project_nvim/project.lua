@@ -1,7 +1,7 @@
 local config = require("project_nvim.config")
 local glob = require("project_nvim.utils.globtopattern")
 local path = require("project_nvim.utils.path")
-local uv = vim.loop
+local uv = vim.uv
 local M = {}
 
 -- Internal states
@@ -11,10 +11,12 @@ M.attached_lsp = false
 function M.find_lsp_root(client)
   -- Get lsp client for current buffer
   -- Returns nil or string
-  local buf_ft = vim.api.nvim_get_option_value('filetype', {
-    buf = 0
+  local buf_ft = vim.api.nvim_get_option_value("filetype", {
+    buf = 0,
   })
-  if not buf_ft or buf_ft == '' then return end
+  if not buf_ft or buf_ft == "" then
+    return
+  end
 
   local clients = client and { client } or vim.lsp.buf_get_clients()
   if next(clients) == nil then
@@ -36,6 +38,14 @@ function M.find_lsp_root(client)
   end
 
   return nil
+end
+
+local function pattern_method_allowed_for_buf(bufnr)
+  local checker = config.options.ignore_buffer_fn
+  if checker then
+    return not checker(bufnr, "pattern")
+  end
+  return true
 end
 
 function M.find_pattern_root()
@@ -153,7 +163,7 @@ end
 ---@diagnostic disable-next-line: unused-local
 local on_attach_lsp = function(client, bufnr)
   M.on_buf_enter({
-    trigger = 'lsp',
+    trigger = "lsp",
     client = client,
     buf = bufnr,
   }) -- Recalculate root dir after lsp attaches
@@ -185,12 +195,12 @@ function M.set_pwd(dir, method)
   if dir ~= nil then
     local scope_chdir = config.options.scope_chdir
     if vim.fn.getcwd() ~= dir then
-      if scope_chdir == 'global' then
+      if scope_chdir == "global" then
         vim.api.nvim_set_current_dir(dir)
-      elseif scope_chdir == 'tab' then
-        vim.cmd('tcd ' .. dir)
-      elseif scope_chdir == 'win' then
-        vim.cmd('lcd ' .. dir)
+      elseif scope_chdir == "tab" then
+        vim.cmd("tcd " .. dir)
+      elseif scope_chdir == "win" then
+        vim.cmd("lcd " .. dir)
       else
         return
       end
@@ -199,14 +209,14 @@ function M.set_pwd(dir, method)
         vim.notify("Set CWD to " .. dir .. " using " .. method)
       end
     end
-    vim.api.nvim_exec_autocmds('User', {
-      pattern = 'ProjectNvimSetPwd',
+    vim.api.nvim_exec_autocmds("User", {
+      pattern = "ProjectNvimSetPwd",
       modeline = false,
       data = {
         dir = dir,
         method = method,
         scope = scope_chdir,
-      }
+      },
     })
     return true
   end
@@ -221,13 +231,17 @@ end
 ---@param ctx? {trigger:'lsp'|'manual'|'auto', client:any, buf:number}
 function M.get_project_root(ctx)
   ctx = ctx or {}
-  if ctx.trigger ~= 'lsp' and vim.b[0].project_nvim_cwd ~= nil then
+  if ctx.trigger ~= "lsp" and vim.b[0].project_nvim_cwd ~= nil then
     return vim.b[ctx.buf or 0].project_nvim_cwd, vim.b[ctx.buf or 0].project_nvim_method
-  elseif ctx.trigger == 'lsp' and ctx.client and make_lsp_method_name(ctx.client.name) == vim.b[ctx.buf or 0].project_nvim_method then
+  elseif
+    ctx.trigger == "lsp"
+    and ctx.client
+    and make_lsp_method_name(ctx.client.name) == vim.b[ctx.buf or 0].project_nvim_method
+  then
     return vim.b[ctx.buf or 0].project_nvim_cwd, vim.b[ctx.buf or 0].project_nvim_method
   end
 
-  local detection_methods = ctx.trigger == 'lsp' and { 'lsp' } or config.options.detection_methods
+  local detection_methods = ctx.trigger == "lsp" and { "lsp" } or config.options.detection_methods
   local buf = ctx.buf or vim.api.nvim_get_current_buf()
   -- returns project root, as well as method
   for _, detection_method in ipairs(detection_methods) do
@@ -250,12 +264,20 @@ function M.get_project_root(ctx)
   end
 end
 
-function M.is_file()
-  local buf_type = vim.api.nvim_get_option_value('buftype', {
-    buf = 0
+function M.is_file(buf)
+  buf = buf or 0
+
+  local buf_type = vim.api.nvim_get_option_value("buftype", {
+    buf = buf,
   })
-  local buf_name = vim.api.nvim_buf_get_name(0)
-  if not buf_name or buf_name == '' then return end
+  local ft = vim.api.nvim_get_option_value("filetype", {
+    buf = buf,
+  })
+
+  local buf_name = vim.api.nvim_buf_get_name(buf)
+  if not buf_name or buf_name == "" then
+    return
+  end
 
   local whitelisted_buf_type = { "", "acwrite" }
   local is_in_whitelist = false
@@ -267,6 +289,17 @@ function M.is_file()
   end
   if not is_in_whitelist then
     return false
+  end
+
+  if config.options.exclude_ft and vim.tbl_contains(config.options.exclude_ft, ft) then
+    return false
+  end
+
+  if config.options.ignore_buffer_fn then
+    local value = config.options.ignore_buffer_fn(buf)
+    if value == true then
+      return false
+    end
   end
 
   return true
@@ -282,7 +315,7 @@ function M.on_buf_enter(ctx)
     return
   end
 
-  if not M.is_file() then
+  if not M.is_file(ctx.buf or 0) then
     return
   end
 
@@ -297,7 +330,7 @@ end
 
 function M.add_project_manually()
   local current_dir = vim.fn.expand("%:p:h", true)
-  M.set_pwd(current_dir, 'manual')
+  M.set_pwd(current_dir, "manual")
 end
 
 function M.init()
