@@ -194,6 +194,17 @@ end
 function M.set_pwd(dir, method)
   if dir ~= nil then
     local scope_chdir = config.options.scope_chdir
+
+    vim.api.nvim_exec_autocmds("User", {
+      pattern = "ProjectNvimSetPwd",
+      modeline = false,
+      data = {
+        dir = dir,
+        method = method,
+        scope = scope_chdir,
+      },
+    })
+
     if vim.fn.getcwd() ~= dir then
       if scope_chdir == "global" then
         vim.api.nvim_set_current_dir(dir)
@@ -209,15 +220,6 @@ function M.set_pwd(dir, method)
         vim.notify("Set CWD to " .. dir .. " using " .. method)
       end
     end
-    vim.api.nvim_exec_autocmds("User", {
-      pattern = "ProjectNvimSetPwd",
-      modeline = false,
-      data = {
-        dir = dir,
-        method = method,
-        scope = scope_chdir,
-      },
-    })
     return true
   end
 
