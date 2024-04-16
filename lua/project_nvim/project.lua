@@ -169,6 +169,8 @@ local on_attach_lsp = function(client, bufnr)
   }) -- Recalculate root dir after lsp attaches
 end
 
+--- FIXME: do not hijack lsp atttach.
+--- Only run on buffer is visible to window.
 function M.attach_to_lsp()
   if M.attached_lsp then
     return
@@ -338,7 +340,8 @@ end
 function M.init()
   local autocmds = {}
   if not config.options.manual_mode then
-    autocmds[#autocmds + 1] = 'autocmd VimEnter,BufEnter * ++nested lua require("project_nvim.project").on_buf_enter()'
+    autocmds[#autocmds + 1] =
+      'autocmd VimEnter,BufWinEnter * ++nested lua require("project_nvim.project").on_buf_enter()'
 
     if vim.tbl_contains(config.options.detection_methods, "lsp") then
       M.attach_to_lsp()
