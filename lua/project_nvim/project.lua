@@ -18,7 +18,9 @@ function M.find_lsp_root(client)
     return
   end
 
-  local clients = client and { client } or vim.lsp.buf_get_clients()
+  local clients = client and { client } or vim.lsp.get_clients({
+    bufnr = vim.api.nvim_get_current_buf(),
+  })
   if next(clients) == nil then
     return nil
   end
@@ -38,14 +40,6 @@ function M.find_lsp_root(client)
   end
 
   return nil
-end
-
-local function pattern_method_allowed_for_buf(bufnr)
-  local checker = config.options.ignore_buffer_fn
-  if checker then
-    return not checker(bufnr, "pattern")
-  end
-  return true
 end
 
 function M.find_pattern_root()
