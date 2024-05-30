@@ -14,11 +14,17 @@ M.defaults = {
 
   -- All the patterns used to detect root dir, when **"pattern"** is in
   -- detection_methods
-  patterns = { ".git", "_darcs", ".hg", ".bzr", ".svn", "Makefile", "package.json" },
+  patterns = { ".git", ".hg", ".svn", "package.json", ".direnv", "Cargo.toml", "pyproject.toml" },
 
   -- Table of lsp clients to ignore by name
   -- eg: { "efm", ... }
-  ignore_lsp = {},
+  ignore_lsp = {
+    "efm",
+    "null-ls",
+    "copilot",
+    "jsonls",
+    "eslint",
+  },
 
   -- Don't calculate root dir on specific directories
   -- Ex: { "~/.cargo/*", ... }
@@ -29,9 +35,6 @@ M.defaults = {
   -- excluded filetypes
   exclude_ft = { "gitcommit", "git", "fugitive" },
 
-  -- Show hidden files in telescope
-  show_hidden = false,
-
   -- When set to false, you will get a message when project.nvim changes your
   -- directory.
   silent_chdir = true,
@@ -40,7 +43,7 @@ M.defaults = {
   -- * global (default)
   -- * tab
   -- * win
-  scope_chdir = "global",
+  scope_chdir = "tab",
 }
 
 ---@type ProjectOptions

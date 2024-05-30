@@ -54,9 +54,6 @@ Install the plugin with your preferred package manager:
   -- Ex: { "~/.cargo/*", ... }
   exclude_dirs = {},
 
-  -- Show hidden files in telescope
-  show_hidden = false,
-
   -- When set to false, you will get a message when project.nvim changes your
   -- directory.
   silent_chdir = true,

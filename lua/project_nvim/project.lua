@@ -1,7 +1,5 @@
 local config = require("project_nvim.config")
-local glob = require("project_nvim.utils.globtopattern")
 local path = require("project_nvim.utils.path")
-local uv = vim.uv
 local M = {}
 
 -- Internal states
@@ -48,110 +46,12 @@ function M.find_pattern_root()
     search_dir = search_dir:gsub("\\", "/")
   end
 
-  local last_dir_cache = ""
-  local curr_dir_cache = {}
-
-  local function get_parent(path)
-    path = path:match("^(.*)/")
-    if path == "" then
-      path = "/"
-    end
-    return path
+  local patterns = config.options.patterns
+  if not patterns or #patterns < 1 then
+    patterns = { ".git", "package.json" }
   end
 
-  local function get_files(file_dir)
-    last_dir_cache = file_dir
-    curr_dir_cache = {}
-
-    local dir = uv.fs_scandir(file_dir)
-    if dir == nil then
-      return
-    end
-
-    while true do
-      local file = uv.fs_scandir_next(dir)
-      if file == nil then
-        return
-      end
-
-      table.insert(curr_dir_cache, file)
-    end
-  end
-
-  local function is(dir, identifier)
-    dir = dir:match(".*/(.*)")
-    return dir == identifier
-  end
-
-  local function sub(dir, identifier)
-    local path = get_parent(dir)
-    while true do
-      if is(path, identifier) then
-        return true
-      end
-      local current = path
-      path = get_parent(path)
-      if current == path then
-        return false
-      end
-    end
-  end
-
-  local function child(dir, identifier)
-    local path = get_parent(dir)
-    return is(path, identifier)
-  end
-
-  local function has(dir, identifier)
-    if last_dir_cache ~= dir then
-      get_files(dir)
-    end
-    local pattern = glob.globtopattern(identifier)
-    for _, file in ipairs(curr_dir_cache) do
-      if file:match(pattern) ~= nil then
-        return true
-      end
-    end
-    return false
-  end
-
-  local function match(dir, pattern)
-    local first_char = pattern:sub(1, 1)
-    if first_char == "=" then
-      return is(dir, pattern:sub(2))
-    elseif first_char == "^" then
-      return sub(dir, pattern:sub(2))
-    elseif first_char == ">" then
-      return child(dir, pattern:sub(2))
-    else
-      return has(dir, pattern)
-    end
-  end
-
-  -- breadth-first search
-  while true do
-    for _, pattern in ipairs(config.options.patterns) do
-      local exclude = false
-      if pattern:sub(1, 1) == "!" then
-        exclude = true
-        pattern = pattern:sub(2)
-      end
-      if match(search_dir, pattern) then
-        if exclude then
-          break
-        else
-          return search_dir, "pattern " .. pattern
-        end
-      end
-    end
-
-    local parent = get_parent(search_dir)
-    if parent == search_dir or parent == nil then
-      return nil
-    end
-
-    search_dir = parent
-  end
+  return vim.fs.root(search_dir, patterns), "pattern"
 end
 
 ---@diagnostic disable-next-line: unused-local
@@ -170,19 +70,21 @@ function M.attach_to_lsp()
     return
   end
 
-  local _start_client = vim.lsp.start_client
-  vim.lsp.start_client = function(lsp_config)
-    if lsp_config.on_attach == nil then
-      lsp_config.on_attach = on_attach_lsp
-    else
-      local _on_attach = lsp_config.on_attach
-      lsp_config.on_attach = function(client, bufnr)
-        on_attach_lsp(client, bufnr)
-        _on_attach(client, bufnr)
+  vim.api.nvim_create_augroup("setup_project_nvim_lsp", { clear = true })
+
+  vim.api.nvim_create_autocmd("LspAttach", {
+    group = "setup_project_nvim_lsp",
+    pattern = "*",
+    callback = function(args)
+      local bufnr = args.buf
+      local client = vim.lsp.get_client_by_id(args.data.client_id)
+      if not client then
+        return
       end
-    end
-    return _start_client(lsp_config)
-  end
+
+      on_attach_lsp(client, bufnr)
+    end,
+  })
 
   M.attached_lsp = true
 end
