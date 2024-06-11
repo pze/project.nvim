@@ -40,7 +40,12 @@ function M.find_lsp_root(client)
   return nil
 end
 
-function M.find_pattern_root()
+---@param buf? number
+function M.find_pattern_root(buf)
+  if not buf or buf == 0 then
+    buf = vim.api.nvim_get_current_buf()
+  end
+
   local search_dir = vim.fn.expand("%:p:h", true)
   if vim.fn.has("win32") > 0 then
     search_dir = search_dir:gsub("\\", "/")
@@ -49,6 +54,12 @@ function M.find_pattern_root()
   local patterns = config.options.patterns
   if not patterns or #patterns < 1 then
     patterns = { ".git", "package.json" }
+  end
+  if config.options.get_patterns then
+    local custom_patterns = config.options.get_patterns(buf)
+    if custom_patterns and #custom_patterns > 0 then
+      patterns = custom_patterns
+    end
   end
 
   local found = vim.fs.root(search_dir, patterns)
@@ -159,7 +170,7 @@ function M.get_project_root(ctx)
         return root, method_name
       end
     elseif detection_method == "pattern" then
-      local root, method = M.find_pattern_root()
+      local root, method = M.find_pattern_root(buf)
       if root ~= nil then
         vim.b[buf].project_nvim_cwd = root
         vim.b[buf].project_nvim_method = method

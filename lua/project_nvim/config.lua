@@ -16,6 +16,8 @@ M.defaults = {
   -- detection_methods
   patterns = { ".git", ".hg", ".svn", "package.json", ".direnv", "Cargo.toml", "pyproject.toml" },
 
+  get_patterns = nil,
+
   -- Table of lsp clients to ignore by name
   -- eg: { "efm", ... }
   ignore_lsp = {
