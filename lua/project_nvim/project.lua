@@ -51,7 +51,12 @@ function M.find_pattern_root()
     patterns = { ".git", "package.json" }
   end
 
-  return vim.fs.root(search_dir, patterns), "pattern"
+  local found = vim.fs.root(search_dir, patterns)
+  if found == vim.env.HOME then
+    return nil, nil
+  end
+
+  return found, "pattern"
 end
 
 ---@diagnostic disable-next-line: unused-local
